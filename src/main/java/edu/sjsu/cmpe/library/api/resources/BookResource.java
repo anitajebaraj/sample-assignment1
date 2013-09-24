@@ -109,9 +109,8 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     
-    public LinksDto createbook(Book book,Author author) {
-    	
-    	if(book.getTitle()!=null && book.getPublicationDate()!=null)
+    public Response createbook(Book book,Author author) {
+    	if(book.getPublicationDate()!="" && book.getTitle()!="")
     	{
     	HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
     	HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
@@ -165,13 +164,16 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     	linksResponse.addLink(new LinkDto("create-review", "/books/"+book.getIsbn()+"/reviews" , "POST"));
     	// add more links
     	
-    	return linksResponse;
+    	return Response.status(201).entity(linksResponse).build();
     	}
     	else
     	{
-    		LinksDto linksResponse = new LinksDto();
-    		return linksResponse;
+    		ErrorMessages em = new ErrorMessages();
+    		em.setStatusCode(400);
+    		em.setMessage("Title or publication date cannot be null");
+    		return Response.ok(em).build();
     	}
+    	
         }
     //DELETE BOOK
 @DELETE
@@ -215,19 +217,23 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	
-    public LinksDto updateBookByIsbn(@PathParam("isbn") LongParam isbn,@QueryParam("status") String newStatus)
-    {
-    	Book book=new Book();
-    	String title="",rating,numOfPages,status,language,publicationDate;
-    	//book.setIsbn(isbn.get());
-    	Reviews review=new Reviews(); 
-    	HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
+    public Response updateBookByIsbn(@PathParam("isbn") LongParam isbn,@QueryParam("status") String newStatus)
+	{
+		HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
     	bookMapDetails=bookMap.getBookHashMap();
-    	HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
-    	bookReviewDetails=bookMap.getReviewHashMap();
     	ArrayList<String> bookToUpdate=new ArrayList<String>();
     	int updIsbn=(int)(long)isbn.get();
     	bookToUpdate=bookMapDetails.get(updIsbn);
+		Book book=new Book();
+    	String title="",rating,numOfPages,status,language,publicationDate;
+    	//book.setIsbn(isbn.get());
+    	Reviews review=new Reviews(); 
+    	
+    	HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
+    	bookReviewDetails=bookMap.getReviewHashMap();
+    	
+    	
+    	
     	bookToUpdate.set(4, newStatus);
     	bookMapDetails.put(updIsbn,(ArrayList<String>) bookToUpdate );
     	bookMap.setBookHashMap(bookMapDetails);
@@ -252,7 +258,8 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 			response.addLink(new LinkDto("view-all-reviews","/books/" + book.getIsbn() +"/reviews", "GET"));
 
     	
-    	return response;
+    	return Response.status(201).entity(response).build();
+		
     }
 	//create Review
 	@Timed(name="create-book-reviews")
@@ -294,7 +301,7 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     @Path("/{isbn}/reviews")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public LinksDto viewAllReviews(@PathParam("isbn") LongParam isbn)
+    public Response viewAllReviews(@PathParam("isbn") LongParam isbn)
     {
     	Book book = new Book();
     	BookDetails bookMap = new BookDetails();
@@ -304,18 +311,11 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     	HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
       //for book
     	bookMapDetails=bookMap.getBookHashMap();
-      	//if(bookMapDetails.isEmpty())
-      		//bookMapDetails=bookMap.createBookHashMap();
-      	
       //for rating
       	bookReviewRatingDetails=bookMap.getReviewRatingHashMap();
-      //	if(bookReviewRatingDetails.isEmpty())
-      	//	bookReviewRatingDetails=bookMap.createReviewRatingHashMap();
-    //for review
+        //for review
       	bookReviewDetails=bookMap.getReviewHashMap();
-      	//if(bookReviewDetails.isEmpty())
-			//bookReviewDetails=bookMap.createReviewHashMap();
-      	ArrayList bookReviewList = new ArrayList();
+        ArrayList bookReviewList = new ArrayList();
       	ArrayList bookReviewRatingList = new ArrayList();
     	System.out.print("this is the hashmap"+bookMapDetails);
     	System.out.print("this is the hashmap"+bookReviewDetails);
@@ -325,12 +325,6 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     	int reqIsbn;
 
     	reqIsbn=(int)(long)book.getIsbn();
-    	/*title=(String) bookMapDetails.get(reqIsbn).get(0);//0 is value from arraylist
-    	numOfPages=(String)bookMapDetails.get(reqIsbn).get(3);
-    	status=(String)bookMapDetails.get(reqIsbn).get(4);
-    	rating=(String)bookMapDetails.get(reqIsbn).get(5);
-    	language=(String)bookMapDetails.get(reqIsbn).get(2);
-    	publicationDate=(String)bookMapDetails.get(reqIsbn).get(1);*/
     	//reviews and rating lists
     	bookReviewList=bookReviewDetails.get(reqIsbn);
     	bookReviewRatingList=bookReviewRatingDetails.get(reqIsbn);
@@ -347,11 +341,8 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     		String id=""+i;
     		linkResponse.addReviewLink(new ReviewDto(id,reviewRating,reviewValues));
     	}
-    	//linkResponse.addLink(new LinkDto("view-book", "/books/" + book.getIsbn(),"GET"));
-    	//linkResponse.addLink(new LinkDto("update-book","/books/" + book.getIsbn(), "POST"));
-    	//linkResponse.addLink(new LinkDto("delete-book","/books/" + book.getIsbn(), "DELETE"));
-		//linkResponse.addLink(new LinkDto("create-review","/books/" + book.getIsbn() +"/reviews", "POST"));
-    	return linkResponse;
+    	return Response.status(201).entity(linkResponse).build();
+    	
     }
     
 	//View particular Review of book
@@ -360,10 +351,11 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 	    @Path("/{isbn}/reviews/{id}")
 	    @Produces(MediaType.APPLICATION_JSON)
 	    @Consumes(MediaType.APPLICATION_JSON)
-	    public LinksDto viewBookReviewById(@PathParam("isbn") LongParam isbn,@PathParam("id") LongParam id)
+	    public Response viewBookReviewById(@PathParam("isbn") LongParam isbn,@PathParam("id") LongParam id)
 	    {
 	    	Book book = new Book();
 	    	BookDetails bookMap = new BookDetails();
+	    	
 	    	book.setIsbn(isbn.get());
 	    	Reviews review=new Reviews();
 	    	long reviewId=id.get();
@@ -419,7 +411,8 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 	    	}
 	    	
 	    	linkResponse.addLink(new LinkDto("view-review","/books/" + reqIsbn +"/reviews/"+reviewId, "POST"));
-	    	return linkResponse;
+	    	return Response.status(201).entity(linkResponse).build();
+	    	
 	    }
     
     //view author of a particular book
